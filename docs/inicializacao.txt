@@ -1,0 +1,13 @@
+No CMD abra o diretorio do app e digite o comando:
+    -- docker-compose up airflow-init
+    => Esse comando cria toda a estrutura necessaria dentro do container para poder utilizar o airflow
+
+Ainda no CMD digite o comando:
+    -- docker-compose up
+    => Esse comando da start ao ambiente para usar via web-service
+
+No Browser digite:
+    => http://localhost:8080/
+
+Para encerrar o container no CMD digite o comando:
+    -- docker-compose down

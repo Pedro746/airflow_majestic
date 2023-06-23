@@ -18,11 +18,12 @@ def read_csv_and_insert_to_postgres():
 
     #Renomeando as colunas
     df = df.rename(columns = {
-        'idCliente' : 'id_venda',
+        'idCliente' : 'id_cliente',
         'Nome' : 'nome',
         'Tipo' : 'tipo',
         'Media de Alunos' : 'media_de_alunos',
-        'Classificacao' : 'classificacao'
+        'Classificacao' : 'classificacao',
+        'idCidade' : 'id_cidade'
     })
 
     # Conectando ao banco de dados PostgreSQL
@@ -56,6 +57,14 @@ create_table = PostgresOperator(
     task_id = 'create_table',
     postgres_conn_id = 'conn_db_majestic',
     sql = 'cliente.sql',
+    dag = dag
+)
+
+# Tarefa que executa um truncate na tabela caso já exista e tenha dados
+truncate_table = PostgresOperator(
+    task_id = 'truncate_table',
+    postgres_conn_id = 'conn_db_majestic',
+    sql = 'truncate_cliente.sql',
     dag = dag
 )
 
@@ -102,6 +111,6 @@ send_email_success = EmailOperator(
     trigger_rule= 'all_success'
     )
 
-create_table >> file_to_postgres >> query_data_count >> print_total_rows_inserted
+create_table >> truncate_table >> file_to_postgres >> query_data_count >> print_total_rows_inserted
 print_total_rows_inserted >> send_email_success
 print_total_rows_inserted >> send_email_error

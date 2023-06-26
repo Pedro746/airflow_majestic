@@ -7,43 +7,34 @@ from datetime import datetime
 import pandas as pd
 
 
+def read_csv_and_insert_to_postgres_vendedor():
 
-def read_csv_and_insert_to_postgres_clientes():
+    file_path = '/opt/airflow/data/vendedor.csv'
 
-    # Configurações do arquivo
-    file_path = '/opt/airflow/data/cliente.csv'
-
-    # Lendo o arquivo
     df = pd.read_csv(file_path)
 
-    #Renomeando as colunas
-    df = df.rename(columns = {
-        'idCliente' : 'id_cliente',
+    df = df.rename(columns= {
+        'idVendedor' : 'id_vendedor',
         'Nome' : 'nome',
-        'Tipo' : 'tipo',
-        'Media de Alunos' : 'media_de_alunos',
-        'Classificacao' : 'classificacao',
-        'idCidade' : 'id_cidade'
+        'Gerente' : 'gerente',
+        'URL Gerente' : 'url_gerente'
     })
 
-    # Conectando ao banco de dados PostgreSQL
+
     postgres_conn_id = 'conn_db_majestic'
     postgres_hook = PostgresHook(postgres_conn_id)
 
-    # Inserindo os dados no banco de dados
-    postgres_hook.insert_rows(table = 'cliente', rows = df.values.tolist())
+    postgres_hook.insert_rows(table = 'vendedor', rows = df.values.tolist())
 
 
-#  Função que realiza a contagem de linhas inseridas na tabela
 def total_rows_inserted(ti):
 
-    task_instance = ti.xcom_pull(task_ids = 'query_data_count')
+    task_instance = ti.excom_pull(task_ids = 'query_data_count')
     print(f'Total de linhas inseridas: {task_instance}')
 
 
-# Definindo a DAG
 dag = DAG(
-    'jClientes',
+    'jVendedor',
     description= 'DAG que lê um arquivo e salva os dados numa tabela no banco de dados Postgres',
     schedule_interval= None,
     start_date= datetime(2023, 6, 22),
@@ -71,7 +62,7 @@ truncate_table = PostgresOperator(
 # Tarefa que executa a função de leitura do arquivo e inserção no PostgreSQL
 file_to_postgres = PythonOperator(
     task_id = 'file_to_postgres',
-    python_callable = read_csv_and_insert_to_postgres_clientes,
+    python_callable = read_csv_and_insert_to_postgres_vendedor,
     dag = dag
 )
 
@@ -110,7 +101,3 @@ send_email_success = EmailOperator(
     dag=dag,
     trigger_rule= 'all_success'
     )
-
-create_table >> truncate_table >> file_to_postgres >> query_data_count >> print_total_rows_inserted
-print_total_rows_inserted >> send_email_success
-print_total_rows_inserted >> send_email_error

@@ -29,7 +29,7 @@ def read_csv_and_insert_to_postgres_vendedor():
 
 def total_rows_inserted(ti):
 
-    task_instance = ti.excom_pull(task_ids = 'query_data_count')
+    task_instance = ti.xcom_pull(task_ids = 'query_data_count')
     print(f'Total de linhas inseridas: {task_instance}')
 
 
@@ -47,7 +47,7 @@ dag = DAG(
 create_table = PostgresOperator(
     task_id = 'create_table',
     postgres_conn_id = 'conn_db_majestic',
-    sql = 'cliente.sql',
+    sql = 'vendedor.sql',
     dag = dag
 )
 
@@ -55,7 +55,7 @@ create_table = PostgresOperator(
 truncate_table = PostgresOperator(
     task_id = 'truncate_table',
     postgres_conn_id = 'conn_db_majestic',
-    sql = 'truncate_cliente.sql',
+    sql = 'truncate_vendedor.sql',
     dag = dag
 )
 
@@ -70,7 +70,7 @@ file_to_postgres = PythonOperator(
 query_data_count = PostgresOperator(
     task_id = 'query_data_count',
     postgres_conn_id = 'conn_db_majestic',
-    sql = 'count_registros_clientes.sql',
+    sql = 'count_registros_vendedor.sql',
     dag = dag
 )
 
@@ -101,3 +101,8 @@ send_email_success = EmailOperator(
     dag=dag,
     trigger_rule= 'all_success'
     )
+
+
+create_table >> truncate_table >> file_to_postgres >> query_data_count >> print_total_rows_inserted
+print_total_rows_inserted >> send_email_success
+print_total_rows_inserted >> send_email_error
